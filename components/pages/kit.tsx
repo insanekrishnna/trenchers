@@ -5,13 +5,15 @@ import { useId } from "react";
 
 /* Shared building blocks for the agent pages — same look as the dashboard. */
 
-export function Page({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+const WIDTH = { full: "max-w-[1440px]", wide: "max-w-[1180px]", narrow: "max-w-[920px]" } as const;
+
+export function Page({ children, className = "", width = "full" }: { children: React.ReactNode; className?: string; width?: keyof typeof WIDTH }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className={`mx-auto max-w-[1440px] space-y-5 px-4 pb-6 pt-6 md:px-8 ${className}`}
+      className={`mx-auto ${WIDTH[width]} space-y-5 px-4 pb-6 pt-6 md:px-8 ${className}`}
     >
       {children}
     </motion.div>
