@@ -5,7 +5,7 @@ import { useId } from "react";
 
 /* Shared building blocks for the agent pages — same look as the dashboard. */
 
-const WIDTH = { full: "max-w-[1440px]", wide: "max-w-[1180px]", narrow: "max-w-[920px]" } as const;
+const WIDTH = { full: "max-w-[1440px] min-[1920px]:max-w-[1680px]", wide: "max-w-[1180px]", narrow: "max-w-[920px]" } as const;
 
 export function Page({ children, className = "", width = "full" }: { children: React.ReactNode; className?: string; width?: keyof typeof WIDTH }) {
   return (
@@ -44,14 +44,15 @@ export function Pills<T extends string>({
 }) {
   const id = useId();
   return (
-    <div className="flex w-fit rounded-full border border-line p-0.5">
+    // never wraps a label; on a narrow screen the row scrolls sideways instead
+    <div className="no-scrollbar flex w-fit max-w-full overflow-x-auto rounded-full border border-line p-0.5">
       {options.map((o) => {
         const on = o.key === value;
         return (
           <button
             key={o.key}
             onClick={() => onChange(o.key)}
-            className={`relative rounded-full px-3 py-1 text-[12.5px] transition-colors ${on ? "text-fg" : "text-subtle hover:text-fg"}`}
+            className={`relative shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] transition-colors ${on ? "text-fg" : "text-subtle hover:text-fg"}`}
           >
             {on && <motion.span layoutId={`pill-${id}`} className="absolute inset-0 rounded-full bg-white/[.08]" transition={{ type: "spring", stiffness: 500, damping: 40 }} />}
             <span className="relative">
@@ -77,16 +78,16 @@ export function Tabs<T extends string>({
 }) {
   const id = useId();
   return (
-    <div className="flex gap-5 border-b border-line">
+    <div className="no-scrollbar flex gap-5 overflow-x-auto border-b border-line">
       {tabs.map((t) => (
         <button
           key={t.key}
           onClick={() => onChange(t.key)}
-          className={`group relative flex items-center gap-1.5 pb-2.5 text-[12.5px] transition-colors ${value === t.key ? "text-fg" : "text-subtle hover:text-muted"}`}
+          className={`group relative flex shrink-0 items-center gap-1.5 whitespace-nowrap pb-2.5 text-[12.5px] transition-colors ${value === t.key ? "text-fg" : "text-subtle hover:text-muted"}`}
         >
           {t.icon && <t.icon className={`size-3.5 ${value === t.key ? "text-accent" : ""}`} weight={value === t.key ? "fill" : "regular"} />}
           {t.label}
-          {value === t.key && <motion.span layoutId={`tab-${id}`} className="absolute inset-x-0 -bottom-px h-px bg-accent" />}
+          {value === t.key && <motion.span layoutId={`tab-${id}`} className="absolute inset-x-0 bottom-0 h-px bg-accent" />}
         </button>
       ))}
     </div>

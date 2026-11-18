@@ -152,7 +152,7 @@ export function Configure() {
 
       {/* tabs + search */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line">
-        <div className="-mb-px">
+        <div className="-mb-px w-full min-w-0 sm:w-auto">
           <Tabs<Section>
             value={section}
             onChange={setSection}
@@ -164,7 +164,7 @@ export function Configure() {
             ]}
           />
         </div>
-        <label className="mb-2 flex h-8 w-56 items-center gap-2 rounded-full border border-line px-3 focus-within:border-white/25">
+        <label className="mb-2 flex h-8 w-full items-center sm:w-56 gap-2 rounded-full border border-line px-3 focus-within:border-white/25">
           <MagnifyingGlassIcon className="size-3.5 text-subtle" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search parameters…" className="h-full flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-subtle" />
         </label>
@@ -474,7 +474,7 @@ function Hint({ text }: { text: string }) {
   return (
     <span className="group/hint relative inline-flex">
       <InfoIcon className="size-3.5 text-subtle transition-colors group-hover/hint:text-fg" />
-      <span className="pointer-events-none absolute bottom-6 left-1/2 z-20 w-56 -translate-x-1/2 rounded-md border border-line bg-bg-3 px-2.5 py-1.5 text-[12px] font-normal leading-relaxed text-muted opacity-0 shadow-pop transition-opacity group-hover/hint:opacity-100">
+      <span className="pointer-events-none absolute bottom-6 left-1/2 z-20 hidden w-56 -translate-x-1/2 whitespace-normal rounded-md border border-line bg-bg-3 px-2.5 py-1.5 text-[12px] font-normal leading-relaxed text-muted shadow-pop group-hover/hint:block">
         {text}
       </span>
     </span>
@@ -484,7 +484,7 @@ function Hint({ text }: { text: string }) {
 /** Icon in a small soft tile + label + hint. */
 function Label({ icon: I, label, hint, children }: { icon: Icon; label: string; hint: string; children?: React.ReactNode }) {
   return (
-    <span className="flex items-center gap-2.5 text-[13.5px]">
+    <span className="flex min-w-0 items-center gap-2.5 whitespace-nowrap text-[13.5px]">
       <span className="grid size-7 shrink-0 place-items-center rounded-md border border-line bg-white/[.03]">
         <I className="size-4 text-muted" />
       </span>
@@ -497,7 +497,7 @@ function Label({ icon: I, label, hint, children }: { icon: Icon; label: string; 
 
 function Row({ icon, label, hint, children }: { icon: Icon; label: string; hint: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[56px] items-center justify-between gap-4 px-5 py-2.5 transition-colors hover:bg-white/[.02]">
+    <div className="flex min-h-[56px] items-center justify-between gap-3 px-4 sm:gap-4 sm:px-5 py-2.5 transition-colors hover:bg-white/[.02]">
       <Label icon={icon} label={label} hint={hint} />
       {children}
     </div>
@@ -626,7 +626,7 @@ function Segmented<T extends string>({ value, onChange, options }: { value: T; o
           <button
             key={o.key}
             onClick={() => onChange(o.key)}
-            className={`relative flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] transition-colors ${on ? "text-bg" : "text-subtle hover:text-fg"}`}
+            className={`relative flex items-center gap-1.5 rounded-full px-2.5 py-1 sm:px-3 text-[12.5px] transition-colors ${on ? "text-bg" : "text-subtle hover:text-fg"}`}
           >
             {on && <motion.span layoutId={`seg-${options.map((x) => x.key).join("")}`} className="absolute inset-0 rounded-full bg-fg" transition={{ type: "spring", stiffness: 500, damping: 38 }} />}
             {o.icon && <o.icon className="relative size-3.5" weight={on ? "fill" : "regular"} />}

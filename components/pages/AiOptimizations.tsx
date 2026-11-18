@@ -57,7 +57,7 @@ export function AiOptimizations() {
               <p className="px-5 py-10 text-center text-[13px] text-subtle">No tuning runs yet. Turn AI optimizations on to start the first review.</p>
             ) : (
               <ol className="relative">
-                <span className="absolute bottom-6 left-[86px] top-6 w-px bg-line" aria-hidden />
+                <span className="absolute bottom-6 left-[86px] top-6 hidden w-px bg-line sm:block" aria-hidden />
                 <AnimatePresence initial={false}>
                   {shown.map((e) => (
                     <motion.li
@@ -66,7 +66,7 @@ export function AiOptimizations() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="group relative flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[.025]"
+                      className="group relative flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5 transition-colors hover:bg-white/[.025]"
                     >
                       <EventRow e={e} />
                     </motion.li>
@@ -118,7 +118,7 @@ function EventRow({ e }: { e: AiEvent }) {
   return (
     <>
       <span className="w-10 shrink-0 text-[12px] tabular-nums text-subtle">{fmtTime(e.at)}</span>
-      <span className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full bg-bg-2">
+      <span className="relative z-10 hidden size-7 shrink-0 place-items-center rounded-full bg-bg-2 sm:grid">
         <I className="size-4" style={{ color: look.color }} weight={e.kind === "buy" ? "bold" : "regular"} />
       </span>
 

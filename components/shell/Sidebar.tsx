@@ -13,6 +13,7 @@ import {
   FlaskIcon,
   type Icon,
   SidebarSimpleIcon,
+  XIcon,
   SquaresFourIcon,
   StackIcon,
   WalletIcon,
@@ -53,26 +54,40 @@ const EXTRA: Record<string, Partial<Item>> = {
 
 const agent: Item[] = AGENT_PAGES.map((p) => ({ icon: ICONS[p.href], label: p.label, href: p.href, ...EXTRA[p.href] }));
 
-export function Sidebar() {
+/**
+ * The navigation column. On laptops and up it's a fixed column ("desktop");
+ * on phones and tablets the same content opens as a slide-in drawer ("drawer").
+ */
+export function Sidebar({ variant = "desktop", onNavigate }: { variant?: "desktop" | "drawer"; onNavigate?: () => void }) {
   const [open, setOpen] = useState(true);
   const pathname = usePathname();
+  const drawer = variant === "drawer";
   return (
-    <aside data-tour="sidebar" className="hidden h-full w-[232px] shrink-0 flex-col border-r border-line bg-bg lg:flex">
+    <aside
+      data-tour={drawer ? undefined : "sidebar"}
+      className={`${drawer ? "flex w-[272px] shadow-pop" : "hidden w-[232px] lg:flex"} h-full shrink-0 flex-col border-r border-line bg-bg`}
+    >
       {/* brand */}
       <div className="flex h-16 shrink-0 items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80">
+        <Link href="/" onClick={onNavigate} className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80">
           <Logo />
           <span className="text-[15px] font-medium tracking-tight">TrenchersAI</span>
         </Link>
-        <button className="icon-btn size-7" aria-label="Collapse sidebar" title="Collapse sidebar">
-          <SidebarSimpleIcon className="size-4" />
-        </button>
+        {drawer ? (
+          <button onClick={onNavigate} className="icon-btn size-8" aria-label="Close menu" title="Close menu">
+            <XIcon className="size-4" />
+          </button>
+        ) : (
+          <button className="icon-btn size-7" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <SidebarSimpleIcon className="size-4" />
+          </button>
+        )}
       </div>
 
       <nav className="no-scrollbar flex-1 overflow-y-auto px-3 pb-3">
         <Section label="All agents">
           {global.map((i) => (
-            <NavRow key={i.label} item={i} />
+            <NavRow key={i.label} item={i} onNavigate={onNavigate} />
           ))}
         </Section>
 
@@ -104,7 +119,7 @@ export function Sidebar() {
               >
                 <div className="mt-0.5 space-y-px">
                   {agent.map((i) => (
-                    <NavRow key={i.label} item={i} active={i.href === pathname} />
+                    <NavRow key={i.label} item={i} active={i.href === pathname} onNavigate={onNavigate} />
                   ))}
                 </div>
               </motion.div>
@@ -141,10 +156,11 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function NavRow({ item: i, active = false }: { item: Item; active?: boolean }) {
+function NavRow({ item: i, active = false, onNavigate }: { item: Item; active?: boolean; onNavigate?: () => void }) {
   return (
     <Link
       href={i.href ?? "#"}
+      onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={`group relative flex h-[30px] items-center gap-2.5 rounded-lg px-2 text-[13px] transition-colors ${
         active ? "bg-white/[.07] text-fg" : "text-muted hover:bg-white/[.045] hover:text-fg"

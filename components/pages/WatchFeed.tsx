@@ -196,15 +196,15 @@ function FeedCard({ t }: { t: Live }) {
         <div className="ml-1 min-w-0 flex-1">
           <p className="flex items-baseline gap-2">
             <span className="text-[13.5px] font-medium">{t.symbol}</span>
-            <span className="truncate text-[12px] text-subtle">{t.name}</span>
+            <span className="hidden truncate text-[12px] text-subtle sm:inline">{t.name}</span>
           </p>
-          <p className="mt-0.5 flex items-center gap-2 text-[12px] tabular-nums">
+          <p className="mt-0.5 flex items-center gap-2 whitespace-nowrap text-[12px] tabular-nums">
             <span className={t.ageSec < 60 ? "text-green" : "text-muted"}>{age(t.ageSec)}</span>
             <span className="text-subtle">·</span>
             <span className="text-subtle">
               MC <span className="text-muted">{usd(t.mc)}</span>
             </span>
-            <span className="text-subtle">
+            <span className="hidden text-subtle min-[400px]:inline">
               V <span className="text-muted">{usd(t.vol)}</span>
             </span>
           </p>
@@ -221,7 +221,8 @@ function FeedCard({ t }: { t: Live }) {
               aria-expanded={checking}
               className={`h-7 rounded-full px-3 text-[12px] transition-colors active:scale-[.97] ${checking ? "bg-fg text-bg" : "bg-white/[.07] text-fg hover:bg-white/[.12]"}`}
             >
-              Entry check
+              <span className="sm:hidden">Check</span>
+              <span className="hidden sm:inline">Entry check</span>
             </button>
           </div>
         )}
@@ -229,7 +230,7 @@ function FeedCard({ t }: { t: Live }) {
 
       {/* gate track: icons sit on a pill that fills as gates pass */}
       <div className="flex items-center gap-2 px-4 pb-3">
-        <div className="relative flex h-8 flex-1 items-center justify-between overflow-hidden rounded-full border border-line px-2.5">
+        <div className="relative flex h-8 min-w-0 flex-1 items-center justify-between overflow-hidden rounded-full border border-line px-1.5 sm:px-2.5">
           <motion.span
             className="absolute inset-y-0 left-0 rounded-full border-r border-green/50 bg-gradient-to-r from-green/[.05] to-green/[.16]"
             initial={false}

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
@@ -33,12 +34,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
+  // phones & tablets: the sidebar opens as a drawer
+  const [nav, setNav] = useState(false);
+  const closeNav = useCallback(() => setNav(false), []);
+  useEffect(() => {
+    if (!nav) return;
+    const k = (e: KeyboardEvent) => e.key === "Escape" && setNav(false);
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [nav]);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex min-h-0 flex-1">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar onTour={() => setTour(true)} />
+          <TopBar onTour={() => setTour(true)} onMenu={() => setNav(true)} />
           {/* key on the route so each page starts at the top */}
           <main key={pathname} className="thin-scroll flex-1 overflow-y-auto">
             {children}
@@ -46,6 +57,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <StatusBar />
+
+      <AnimatePresence>
+        {nav && (
+          <motion.div className="fixed inset-0 z-50 lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+            <button aria-label="Close menu" onClick={closeNav} className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation"
+              className="absolute inset-y-0 left-0"
+              initial={{ x: -290 }}
+              animate={{ x: 0 }}
+              exit={{ x: -290 }}
+              transition={{ type: "spring", stiffness: 420, damping: 40 }}
+            >
+              <Sidebar variant="drawer" onNavigate={closeNav} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Tour open={tour} onClose={closeTour} />
     </div>
   );

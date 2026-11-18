@@ -2,7 +2,7 @@
 
 import { ArrowSquareOutIcon, CaretDownIcon, ChartLineUpIcon, CopyIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { bot, fmtSol, formatHold } from "@/lib/data";
 import { openDetail, pathSamples } from "@/lib/pageData";
 import { Card, LiveDot, TokenIcon } from "@/components/ui/primitives";
@@ -173,7 +173,15 @@ function Cell({ label, value, sub }: { label: string; value: React.ReactNode; su
 /* A short, thin candle chart of the position's market cap since entry. */
 function MiniCandles() {
   const o = openDetail;
-  const W = 760;
+  // draw at the real pixel width, so text and candles never get stretched
+  const box = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(760);
+  useEffect(() => {
+    if (!box.current) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(240, Math.round(e.contentRect.width))));
+    ro.observe(box.current);
+    return () => ro.disconnect();
+  }, []);
   const H = 150;
   const PAD = { l: 2, r: 58, t: 10, b: 8 };
 
@@ -197,7 +205,8 @@ function MiniCandles() {
   const last = candles[candles.length - 1];
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-[150px] w-full" preserveAspectRatio="none" aria-label="Market cap since entry">
+    <div ref={box} className="w-full">
+    <svg viewBox={`0 0 ${W} ${H}`} className="block h-[150px] w-full" aria-label="Market cap since entry">
       <line x1={PAD.l} x2={W - PAD.r} y1={y(o.mc)} y2={y(o.mc)} stroke="rgba(247,247,247,.3)" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />
       <text x={W - PAD.r + 8} y={y(o.mc) + 3} className="fill-subtle text-[10px] tabular-nums">
         entry
@@ -220,5 +229,6 @@ function MiniCandles() {
         {fmtMc(last.c)}
       </text>
     </svg>
+    </div>
   );
 }

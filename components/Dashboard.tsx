@@ -16,7 +16,7 @@ const rise = (d: number) => ({
 
 export function Dashboard() {
   return (
-    <div className="mx-auto max-w-[1440px] space-y-5 px-4 pb-5 pt-6 md:px-8">
+    <div className="mx-auto max-w-[1440px] space-y-5 px-4 pb-5 pt-5 sm:pt-6 md:px-8 min-[1920px]:max-w-[1680px]">
       <motion.div {...rise(0)}>
         <BotHeader />
       </motion.div>

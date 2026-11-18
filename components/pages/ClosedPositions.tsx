@@ -71,7 +71,7 @@ export function ClosedPositions() {
             { key: "loss", label: "Losers", count: pnl.losses },
           ]}
         />
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Pills<View>
             value={view}
             onChange={setView}
@@ -117,7 +117,7 @@ function SortMenu({ value, onChange }: { value: Sort; onChange: (s: Sort) => voi
       <button
         onClick={() => setOpen((o) => !o)}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
-        className="flex h-8 items-center gap-1.5 rounded-full border border-line px-3 text-[12.5px] text-muted transition-colors hover:border-white/20 hover:bg-white/[.04] hover:text-fg"
+        className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-3 text-[12.5px] text-muted transition-colors hover:border-white/20 hover:bg-white/[.04] hover:text-fg"
       >
         <span className="text-subtle">Sort</span> {SORTS.find((s) => s.key === value)!.label}
         <CaretDownIcon className={`size-3 transition-transform ${open ? "rotate-180" : ""}`} />
@@ -211,8 +211,8 @@ function Detail({ t }: { t: ClosedDetail }) {
   ];
   return (
     <div className="px-5 pb-4">
-      <div className="ml-[44px] rounded-lg border border-line">
-        <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
+      <div className="rounded-lg border border-line sm:ml-[44px]">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-2.5">
           <span className="flex items-center gap-2 text-[12.5px]">
             <span className="text-fg">{t.name}</span>
             <button className="icon-btn size-5" aria-label="Copy token address" title="Copy address">

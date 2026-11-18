@@ -392,7 +392,7 @@ export const TradeChart = memo(function TradeChart({ onScrub }: { onScrub: (s: S
         <Menu
           label={
             <span className="flex items-center gap-1.5">
-              <SquareFunction className="size-4" /> Indicators
+              <SquareFunction className="size-4" /> <span className="hidden sm:inline">Indicators</span>
             </span>
           }
           items={[
@@ -414,15 +414,17 @@ export const TradeChart = memo(function TradeChart({ onScrub }: { onScrub: (s: S
           ))}
         </div>
         <div className="flex-1" />
-        <ToolBtn
-          title="Reset view"
-          onClick={() => {
-            setScale((s) => ({ ...s, auto: true }));
-            applyRange(range);
-          }}
-        >
-          <RotateCcw className="size-4" />
-        </ToolBtn>
+        <span className="hidden sm:contents">
+          <ToolBtn
+            title="Reset view"
+            onClick={() => {
+              setScale((s) => ({ ...s, auto: true }));
+              applyRange(range);
+            }}
+          >
+            <RotateCcw className="size-4" />
+          </ToolBtn>
+        </span>
         <ToolBtn title="Download snapshot" onClick={snapshot}>
           <Camera className="size-4" />
         </ToolBtn>
@@ -432,7 +434,7 @@ export const TradeChart = memo(function TradeChart({ onScrub }: { onScrub: (s: S
       </div>
 
       {/* chart */}
-      <div className={`relative ${full ? "flex-1" : "h-[380px]"}`}>
+      <div className={`relative ${full ? "flex-1" : "h-[300px] md:h-[380px]"}`}>
         <div ref={boxRef} className="absolute inset-0" />
 
         {/* legend */}
@@ -593,8 +595,10 @@ export const TradeChart = memo(function TradeChart({ onScrub }: { onScrub: (s: S
           ))}
         </div>
         <div className="flex-1" />
-        <Clock />
-        <Sep />
+        <span className="hidden md:contents">
+          <Clock />
+          <Sep />
+        </span>
         <ScaleBtn on={scale.pct} onClick={() => setScale((s) => ({ ...s, pct: !s.pct, log: false }))}>%</ScaleBtn>
         <ScaleBtn on={scale.log} onClick={() => setScale((s) => ({ ...s, log: !s.log, pct: false }))}>log</ScaleBtn>
         <ScaleBtn on={scale.auto} onClick={() => setScale((s) => ({ ...s, auto: !s.auto }))}>auto</ScaleBtn>
