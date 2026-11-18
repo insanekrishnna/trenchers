@@ -88,7 +88,7 @@ export function ExitReasons() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Top blockers — thin lines, one colour                              */
+/*  Top blockers — thin lines, red fading in toward the value          */
 /* ------------------------------------------------------------------ */
 
 export function TopBlockers() {
@@ -109,8 +109,12 @@ export function TopBlockers() {
             </div>
             <div className="mt-2 h-[3px] rounded-full bg-white/[.06]">
               <motion.div
-                className="h-full rounded-full bg-warn"
-                style={{ width: `${b.pct}%`, transformOrigin: "left" }}
+                className="h-full rounded-full"
+                style={{
+                  width: `${b.pct}%`,
+                  transformOrigin: "left",
+                  background: "linear-gradient(90deg, rgba(255, 98, 46, 0.12), var(--color-red))",
+                }}
                 initial={{ scaleX: 0 }}
                 whileInView={{ scaleX: 1 }}
                 viewport={{ once: true }}

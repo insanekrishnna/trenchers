@@ -55,25 +55,75 @@ const BLOB_PATH = (() => {
   return `${d}Z`;
 })();
 
+// Still by default. It only reacts to the person: the pupils follow the cursor,
+// it smiles when hovered, and squishes + blinks when clicked.
 export function BotAvatar({ size = 40, live = false }: { size?: number; live?: boolean }) {
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const svgRef = useRef<SVGSVGElement>(null);
+  const pupilsRef = useRef<SVGGElement>(null);
+  const [blink, setBlink] = useState(false);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    const pupils = pupilsRef.current;
+    if (!svg || !pupils) return;
+    let frame = 0;
+    const onMove = (e: PointerEvent) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const r = svg.getBoundingClientRect();
+        const dx = e.clientX - (r.left + r.width / 2);
+        const dy = e.clientY - (r.top + r.height / 2);
+        const dist = Math.hypot(dx, dy) || 1;
+        // pull is stronger when the cursor is close, capped so pupils stay inside the eye
+        const reach = Math.min(1, dist / 160) * 1.7;
+        pupils.style.transform = `translate(${((dx / dist) * reach).toFixed(2)}px, ${((dy / dist) * reach).toFixed(2)}px)`;
+      });
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pointermove", onMove);
+    };
+  }, []);
+
+  const poke = () => {
+    setBlink(true);
+    window.setTimeout(() => setBlink(false), 160);
+  };
+
   return (
-    <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 48 48" width={size} height={size} aria-hidden className="overflow-visible">
-        <g className="blob-breathe">
-          <path d={BLOB_PATH} fill="#84ff01" />
-          {/* eyes: whites, then pupils glancing up and to the side */}
-          <g className="bot-eyes">
+    <span className="bot-avatar group relative inline-flex shrink-0 cursor-pointer" style={{ width: size, height: size }} onPointerDown={poke}>
+      <svg ref={svgRef} viewBox="0 0 48 48" width={size} height={size} aria-hidden className="overflow-visible">
+        <defs>
+          {/* soft light from the top-left so the body has some volume */}
+          <radialGradient id={`b${id}`} cx="36%" cy="30%" r="75%">
+            <stop offset="0" stopColor="#b8ff6a" />
+            <stop offset=".55" stopColor="#84ff01" />
+            <stop offset="1" stopColor="#5fc400" />
+          </radialGradient>
+        </defs>
+        <g className="bot-body">
+          <path d={BLOB_PATH} fill={`url(#b${id})`} />
+          {/* eyes: whites, then pupils that track the cursor */}
+          <g className="bot-eyes" style={{ transform: blink ? "scaleY(.12)" : undefined }}>
             <ellipse cx="17.6" cy="24" rx="5.4" ry="5.8" fill="#fff" stroke="#0b0a14" strokeWidth="1.2" transform="rotate(-8 17.6 24)" />
             <ellipse cx="30.6" cy="23" rx="5.4" ry="5.8" fill="#fff" stroke="#0b0a14" strokeWidth="1.2" transform="rotate(8 30.6 23)" />
-            <g className="bot-glance">
-              <ellipse cx="19.5" cy="21.6" rx="2.9" ry="3.1" fill="#0b0a14" />
-              <ellipse cx="32.5" cy="20.6" rx="2.9" ry="3.1" fill="#0b0a14" />
-              <circle cx="20.4" cy="20.6" r=".85" fill="#fff" />
-              <circle cx="33.4" cy="19.6" r=".85" fill="#fff" />
+            <g ref={pupilsRef} className="bot-pupils">
+              <ellipse cx="18" cy="24" rx="2.9" ry="3.1" fill="#0b0a14" />
+              <ellipse cx="31" cy="23" rx="2.9" ry="3.1" fill="#0b0a14" />
+              <circle cx="18.9" cy="23" r=".85" fill="#fff" />
+              <circle cx="31.9" cy="22" r=".85" fill="#fff" />
             </g>
           </g>
-          {/* small smile */}
-          <path d="M22.4 31.4c1 1.2 2.6 1.2 3.6 0" stroke="#0b0a14" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+          {/* cheeks, only when hovered */}
+          <g className="bot-cheeks" fill="#ff8fa3">
+            <ellipse cx="12.6" cy="31" rx="2.4" ry="1.4" />
+            <ellipse cx="35.6" cy="30" rx="2.4" ry="1.4" />
+          </g>
+          {/* small smile that widens on hover */}
+          <path className="bot-smile" d="M22.4 31.4c1 1.2 2.6 1.2 3.6 0" stroke="#0b0a14" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+          <path className="bot-grin" d="M21 30.6c1.5 2.6 4.9 2.6 6.4 0" stroke="#0b0a14" strokeWidth="1.4" strokeLinecap="round" fill="none" />
         </g>
       </svg>
       {live && (

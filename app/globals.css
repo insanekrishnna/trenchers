@@ -166,18 +166,20 @@ button:active:not(:disabled) { transition-duration: .05s; }
 @keyframes radar { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(1.7); opacity: 0; } }
 .radar-ping { animation: radar 2.4s cubic-bezier(.22,1,.36,1) infinite; }
 
-@keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
-.bot-eyes { transform-box: fill-box; transform-origin: center; animation: blink 5s infinite; }
+/* bot avatar: still at rest, reacts only to hover / press / cursor */
+.bot-body { transform-box: fill-box; transform-origin: 50% 95%; transition: transform .25s cubic-bezier(.34, 1.56, .64, 1); }
+.bot-avatar:active .bot-body { transform: scale(1.06, .92); transition-duration: .08s; }
+.bot-eyes { transform-box: fill-box; transform-origin: center; transition: transform .08s ease-out; }
+.bot-pupils { transition: transform .18s ease-out; }
+.bot-cheeks, .bot-grin { opacity: 0; transition: opacity .2s ease; }
+.bot-smile { transition: opacity .2s ease; }
+.bot-avatar:hover .bot-cheeks { opacity: .55; }
+.bot-avatar:hover .bot-grin { opacity: 1; }
+.bot-avatar:hover .bot-smile { opacity: 0; }
 
 /* status dot: solid core, one soft ring expanding out of it */
 @keyframes live-ping { 0% { transform: scale(1); opacity: .55; } 75%, 100% { transform: scale(2.4); opacity: 0; } }
 .live-ping { animation: live-ping 1.8s cubic-bezier(0, 0, .2, 1) infinite; }
-
-@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035, 0.975); } }
-.blob-breathe { transform-box: fill-box; transform-origin: 50% 90%; animation: breathe 3.6s ease-in-out infinite; }
-
-@keyframes glance { 0%, 38%, 100% { transform: translate(0, 0); } 44%, 70% { transform: translate(-2.2px, 0.8px); } 76% { transform: translate(0, 0); } }
-.bot-glance { animation: glance 7s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
