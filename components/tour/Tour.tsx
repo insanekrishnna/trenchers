@@ -31,11 +31,15 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [vp, setVp] = useState({ w: 1280, h: 800 });
-  const step = steps[i];
+  // only the steps whose targets exist on the current page
+  const [list, setList] = useState<TourStep[]>(steps);
+  const step = list[i] ?? list[0] ?? steps[0];
 
   // reset when reopened
   useEffect(() => {
-    if (open) setI(0);
+    if (!open) return;
+    setList(steps.filter((s) => document.querySelector(`[data-tour="${s.target}"]`)));
+    setI(0);
   }, [open]);
 
   // scroll target into view on step change
@@ -66,7 +70,7 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
     return () => cancelAnimationFrame(raf);
   }, [open, step]);
 
-  const next = useCallback(() => (i < steps.length - 1 ? setI(i + 1) : onClose()), [i, onClose]);
+  const next = useCallback(() => (i < list.length - 1 ? setI(i + 1) : onClose()), [i, onClose, list.length]);
   const prev = useCallback(() => setI((v) => Math.max(0, v - 1)), []);
 
   useEffect(() => {
@@ -114,7 +118,7 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
 
   return (
     <AnimatePresence>
-      {open && rect && (
+      {open && rect && step && (
         <motion.div className="fixed inset-0 z-[100]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           {/* click-catcher */}
           <div className="absolute inset-0" onClick={onClose} />
@@ -140,7 +144,7 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
               <div className="flex items-center gap-2.5">
                 <BotAvatar size={30} />
                 <span className="text-[12px] tabular-nums text-muted">
-                  Step {i + 1} of {steps.length}
+                  Step {i + 1} of {list.length}
                 </span>
               </div>
               <button onClick={onClose} className="icon-btn size-7" aria-label="Close tour">
@@ -155,7 +159,7 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
             </AnimatePresence>
             <div className="mt-5 flex items-center justify-between">
               <div className="flex gap-1">
-                {steps.map((_, k) => (
+                {list.map((_, k) => (
                   <span key={k} className={`h-1 rounded-full transition-all duration-300 ${k === i ? "w-5 bg-accent" : k < i ? "w-1.5 bg-accent/50" : "w-1.5 bg-white/15"}`} />
                 ))}
               </div>
@@ -166,7 +170,7 @@ export function Tour({ open, onClose }: { open: boolean; onClose: () => void }) 
                   </button>
                 )}
                 <button onClick={next} className="btn-primary h-9 px-4">
-                  {i === steps.length - 1 ? "Done" : "Next"} {i < steps.length - 1 && <ArrowRight className="size-4" />}
+                  {i === list.length - 1 ? "Done" : "Next"} {i < list.length - 1 && <ArrowRight className="size-4" />}
                 </button>
               </div>
             </div>

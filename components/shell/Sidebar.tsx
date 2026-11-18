@@ -1,58 +1,71 @@
 "use client";
 
 import {
-  ArrowLeftRight,
-  ChevronDown,
-  ChevronLeft,
-  Flag,
-  Gift,
-  History,
-  Home,
-  LayoutGrid,
-  ListOrdered,
-  PanelLeft,
-  Radio,
-  SlidersHorizontal,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
+  ArchiveIcon,
+  ArrowsLeftRightIcon,
+  BinocularsIcon,
+  BoatIcon,
+  CaretDownIcon,
+  CaretLeftIcon,
+  CoinsIcon,
+  FadersIcon,
+  FlagBannerIcon,
+  FlaskIcon,
+  type Icon,
+  SidebarSimpleIcon,
+  SquaresFourIcon,
+  StackIcon,
+  WalletIcon,
+} from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BotAvatar, LiveDot } from "@/components/ui/primitives";
 import { bot, closedTrades, openTrades, pnl } from "@/lib/data";
+import { AGENT_PAGES } from "@/lib/nav";
 
-type Item = { icon: typeof Flag; label: string; active?: boolean; count?: number; live?: boolean; dot?: boolean };
+type Item = { icon: Icon; label: string; href?: string; count?: number; live?: boolean; dot?: boolean };
 
 const global: Item[] = [
-  { icon: Flag, label: "Arena" },
-  { icon: LayoutGrid, label: "Fleet" },
-  { icon: ListOrdered, label: "Open Positions" },
-  { icon: History, label: "Closed Positions" },
-  { icon: ArrowLeftRight, label: "Transactions" },
+  { icon: FlagBannerIcon, label: "Arena" },
+  { icon: BoatIcon, label: "Fleet" },
+  { icon: StackIcon, label: "Open Positions" },
+  { icon: ArchiveIcon, label: "Closed Positions" },
+  { icon: ArrowsLeftRightIcon, label: "Transactions" },
 ];
 
-const agent: Item[] = [
-  { icon: Home, label: "Dashboard", active: true },
-  { icon: Radio, label: "Watch Feed", live: true },
-  { icon: ListOrdered, label: "Open Positions", count: openTrades.length },
-  { icon: History, label: "Closed Positions", count: closedTrades.length },
-  { icon: Sparkles, label: "AI optimizations", dot: true },
-  { icon: SlidersHorizontal, label: "Configure" },
-  { icon: Gift, label: "Rewards" },
-];
+const ICONS: Record<string, Icon> = {
+  "/": SquaresFourIcon,
+  "/watch-feed": BinocularsIcon,
+  "/open-positions": StackIcon,
+  "/closed-positions": ArchiveIcon,
+  "/ai-optimizations": FlaskIcon,
+  "/configure": FadersIcon,
+  "/rewards": CoinsIcon,
+};
+const EXTRA: Record<string, Partial<Item>> = {
+  "/watch-feed": { live: true },
+  "/open-positions": { count: openTrades.length },
+  "/closed-positions": { count: closedTrades.length },
+  "/ai-optimizations": { dot: true },
+};
+
+const agent: Item[] = AGENT_PAGES.map((p) => ({ icon: ICONS[p.href], label: p.label, href: p.href, ...EXTRA[p.href] }));
 
 export function Sidebar() {
   const [open, setOpen] = useState(true);
+  const pathname = usePathname();
   return (
     <aside data-tour="sidebar" className="hidden h-full w-[232px] shrink-0 flex-col border-r border-line bg-bg lg:flex">
       {/* brand */}
       <div className="flex h-16 shrink-0 items-center justify-between px-4">
-        <a href="#" className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80">
+        <Link href="/" className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80">
           <Logo />
           <span className="text-[15px] font-medium tracking-tight">TrenchersAI</span>
-        </a>
+        </Link>
         <button className="icon-btn size-7" aria-label="Collapse sidebar" title="Collapse sidebar">
-          <PanelLeft className="size-4" />
+          <SidebarSimpleIcon className="size-4" />
         </button>
       </div>
 
@@ -77,7 +90,7 @@ export function Sidebar() {
                 <LiveDot size={5} /> Running · Paper
               </span>
             </span>
-            <ChevronDown className={`size-3.5 text-subtle transition-transform duration-200 group-hover:text-fg ${open ? "" : "-rotate-90"}`} />
+            <CaretDownIcon className={`size-3.5 text-subtle transition-transform duration-200 group-hover:text-fg ${open ? "" : "-rotate-90"}`} />
           </button>
 
           <AnimatePresence initial={false}>
@@ -91,7 +104,7 @@ export function Sidebar() {
               >
                 <div className="mt-0.5 space-y-px">
                   {agent.map((i) => (
-                    <NavRow key={i.label} item={i} />
+                    <NavRow key={i.label} item={i} active={i.href === pathname} />
                   ))}
                 </div>
               </motion.div>
@@ -103,7 +116,7 @@ export function Sidebar() {
       {/* footer */}
       <div className="shrink-0 space-y-px border-t border-line px-3 py-2.5">
         <a href="#" className="group flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-white/[.045]">
-          <Wallet className="size-4 text-subtle transition-colors group-hover:text-fg" strokeWidth={1.75} />
+          <WalletIcon className="size-4 text-subtle transition-colors group-hover:text-fg" />
           <span className="flex-1 text-[13px] text-muted transition-colors group-hover:text-fg">Paper wallet</span>
           <span className="text-right leading-tight">
             <span className="block text-[13px] tabular-nums text-fg">{pnl.balance.toFixed(3)}</span>
@@ -111,7 +124,7 @@ export function Sidebar() {
           </span>
         </a>
         <a href="#" className="group flex items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] text-muted transition-colors hover:bg-white/[.045] hover:text-fg">
-          <ChevronLeft className="size-4 text-subtle transition-transform group-hover:-translate-x-0.5 group-hover:text-fg" strokeWidth={1.75} />
+          <CaretLeftIcon className="size-4 text-subtle transition-transform group-hover:-translate-x-0.5 group-hover:text-fg" />
           Manual trading
         </a>
       </div>
@@ -128,18 +141,18 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function NavRow({ item: i }: { item: Item }) {
+function NavRow({ item: i, active = false }: { item: Item; active?: boolean }) {
   return (
-    <a
-      href="#"
-      aria-current={i.active ? "page" : undefined}
+    <Link
+      href={i.href ?? "#"}
+      aria-current={active ? "page" : undefined}
       className={`group relative flex h-[30px] items-center gap-2.5 rounded-lg px-2 text-[13px] transition-colors ${
-        i.active ? "bg-white/[.07] text-fg" : "text-muted hover:bg-white/[.045] hover:text-fg"
+        active ? "bg-white/[.07] text-fg" : "text-muted hover:bg-white/[.045] hover:text-fg"
       }`}
     >
       <i.icon
-        className={`size-4 shrink-0 transition-colors ${i.active ? "text-accent" : "text-subtle group-hover:text-fg"}`}
-        strokeWidth={1.75}
+        weight={active ? "fill" : "regular"}
+        className={`size-4 shrink-0 transition-colors ${active ? "text-accent" : "text-subtle group-hover:text-fg"}`}
       />
       <span className="flex-1 truncate">{i.label}</span>
       {i.live && (
@@ -153,7 +166,7 @@ function NavRow({ item: i }: { item: Item }) {
         </span>
       )}
       {i.dot && <span className="size-1.5 rounded-full bg-accent" title="New suggestions" />}
-    </a>
+    </Link>
   );
 }
 
