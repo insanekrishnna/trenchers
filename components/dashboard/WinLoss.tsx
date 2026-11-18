@@ -110,7 +110,7 @@ export function WinLoss() {
             <button
               key={t.key}
               onClick={() => setWin(t.key)}
-              className={`px-2 py-1.5 text-center transition-colors ${on ? "bg-white/[.06]" : "hover:bg-white/[.03]"}`}
+              className={`px-2 py-1.5 text-center transition-colors ${on ? "bg-white/[.07]" : "hover:bg-white/[.05]"}`}
             >
               <span className={`block text-[11.5px] ${on ? "text-fg" : "text-subtle"}`}>{t.key}</span>
               <span className={`block text-[12.5px] tabular-nums ${up ? "text-green" : "text-red"}`}>

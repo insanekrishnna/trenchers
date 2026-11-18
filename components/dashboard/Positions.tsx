@@ -146,7 +146,7 @@ export function ClosedPositions() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="border-b border-line/60 transition-colors last:border-0 hover:bg-white/[.02]"
+                  className="border-b border-line/60 transition-colors last:border-0 hover:bg-white/[.04]"
                 >
                   <td className="py-2.5 pl-5">
                     <div className="flex items-center gap-3">

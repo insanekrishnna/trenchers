@@ -45,12 +45,22 @@ body {
 
 ::selection { background: rgba(132, 255, 1, 0.35); }
 
+/* ---------- interaction baseline ----------
+   Tailwind v4 resets buttons to the default arrow cursor; anything you can
+   act on should show the hand. Keyboard focus gets a clear lime ring. */
+button:not(:disabled), a[href], [role="button"], [role="tab"], select, summary, label:has(input[type="checkbox"]) { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .5; }
+:where(button, a, input, [tabindex]):focus-visible { outline: 2px solid rgba(132, 255, 1, .7); outline-offset: 2px; }
+button:active:not(:disabled) { transition-duration: .05s; }
+
 /* ---------- surfaces ---------- */
 .card {
   background: var(--color-bg-2);
   border: 1px solid var(--color-line);
   border-radius: 10px;
+  transition: border-color .25s ease;
 }
+.card:hover { border-color: rgba(203, 208, 235, .13); }
 
 /* ---------- buttons ---------- */
 .btn-primary {
@@ -58,21 +68,23 @@ body {
   border-radius: 9999px;
   background: #84ff01;
   color: #04140e; font-size: 14px; font-weight: 500;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 6px 20px -8px rgba(132,255,1,.45);
-  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform .15s ease, background .2s ease, box-shadow .2s ease;
 }
-.btn-primary:hover { filter: brightness(1.08); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 10px 28px -8px rgba(132,255,1,.55); }
-.btn-primary:active { transform: scale(.98); }
+.btn-primary:hover { background: #9dff3a; box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 0 0 3px rgba(132,255,1,.16); }
+.btn-primary:active { transform: scale(.97); }
 
 .btn-live {
   display: inline-flex; align-items: center; gap: .4rem;
   border-radius: 9999px;
   background: #f7f7f7; color: #060510;
   font-size: 14px; font-weight: 500;
-  transition: transform .15s ease, background .2s ease;
+  transition: transform .15s ease, background .2s ease, box-shadow .2s ease;
 }
-.btn-live:hover { background: #fff; }
-.btn-live:active { transform: scale(.98); }
+.btn-live:hover { background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.14); }
+.btn-live:active { transform: scale(.97); }
+.btn-live svg { transition: transform .2s ease; }
+.btn-live:hover svg { transform: translate(1px, -1px); }
 
 .btn-ghost {
   display: inline-flex; align-items: center; gap: .5rem;
@@ -82,8 +94,8 @@ body {
   color: var(--color-fg); font-size: 14px; font-weight: 500;
   transition: background .2s ease, border-color .2s ease, transform .15s ease;
 }
-.btn-ghost:hover { background: rgba(255,255,255,.07); border-color: rgba(203,208,235,.16); }
-.btn-ghost:active { transform: scale(.98); }
+.btn-ghost:hover { background: rgba(255,255,255,.08); border-color: rgba(203,208,235,.22); }
+.btn-ghost:active { transform: scale(.97); }
 
 .btn-link {
   display: inline-flex; align-items: center; gap: .35rem;
@@ -96,17 +108,18 @@ body {
   display: grid; place-items: center;
   border-radius: 9999px;
   color: var(--color-muted);
-  transition: background .2s ease, color .2s ease;
+  transition: background .2s ease, color .2s ease, transform .15s ease;
 }
-.icon-btn:hover { background: rgba(255,255,255,.06); color: var(--color-fg); }
+.icon-btn:hover { background: rgba(255,255,255,.08); color: var(--color-fg); }
+.icon-btn:active { transform: scale(.92); }
 
 .crumb {
   display: inline-flex; align-items: center; gap: .35rem;
-  border-radius: 10px; padding: .35rem .55rem;
+  border-radius: 8px; padding: .35rem .55rem;
   color: var(--color-muted); font-weight: 500;
   transition: background .2s ease, color .2s ease;
 }
-.crumb:hover { background: rgba(255,255,255,.05); color: var(--color-fg); }
+.crumb:hover { background: rgba(255,255,255,.06); color: var(--color-fg); }
 
 /* ---------- nav ---------- */
 .nav-label {
