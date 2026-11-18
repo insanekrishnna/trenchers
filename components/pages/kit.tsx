@@ -44,7 +44,7 @@ export function Pills<T extends string>({
 }) {
   const id = useId();
   return (
-    <div className="flex rounded-full border border-line p-0.5">
+    <div className="flex w-fit rounded-full border border-line p-0.5">
       {options.map((o) => {
         const on = o.key === value;
         return (
