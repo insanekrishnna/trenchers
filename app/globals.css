@@ -144,6 +144,13 @@ button:active:not(:disabled) { transition-duration: .05s; }
 .thin-range::-moz-range-progress { height: 2px; border-radius: 9999px; background: #f7f7f7; }
 .thin-range::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 9999px; background: #f7f7f7; }
 
+/* two stacked range inputs acting as one min/max slider: only the thumbs take the pointer */
+.dual-range { -webkit-appearance: none; appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; background: transparent; pointer-events: none; }
+.dual-range::-webkit-slider-runnable-track { height: 100%; background: transparent; }
+.dual-range::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 14px; height: 100%; background: transparent; cursor: ew-resize; }
+.dual-range::-moz-range-track { background: transparent; }
+.dual-range::-moz-range-thumb { pointer-events: auto; width: 14px; height: 60px; border: 0; background: transparent; cursor: ew-resize; }
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 

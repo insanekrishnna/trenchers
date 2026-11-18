@@ -102,7 +102,7 @@ export const aiEvents: AiEvent[] = (() => {
   for (const o of openTrades) {
     out.push({ kind: "buy", at: o.openedAt, symbol: o.symbol, hue: o.hue, mc: o.mc, entry: o.entry, open: true });
   }
-  out.push({ kind: "config", at: "2026-11-18T08:58:00", title: "Config v2 saved", detail: "Stop loss 0.75× → 0.70×, stale exit 30m → 45m" });
+  out.push({ kind: "config", at: "2026-11-18T08:58:00", title: "Config v2 saved", detail: "Take profit 2.5× → 3×, stale exit 30m → 45m" });
   return out.sort((a, b) => b.at.localeCompare(a.at));
 })();
 

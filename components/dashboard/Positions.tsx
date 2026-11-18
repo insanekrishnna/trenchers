@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { ArrowRight, Radar } from "lucide-react";
 import { useState } from "react";
-import { closedTrades, fmtMc, fmtPct, fmtSol, fmtTime, formatHold, openTrades, pnl, reasonLabel } from "@/lib/data";
+import { closedTrades, config, fmtMc, fmtPct, fmtSol, fmtTime, formatHold, openTrades, pnl, reasonLabel } from "@/lib/data";
 import { END, trades } from "@/lib/chartData";
 
 const openWindows = trades.filter((t) => t.open);
@@ -67,7 +67,7 @@ export function OpenPositions() {
           <span className="absolute inset-0 rounded-full border border-white/20 radar-ping" />
           <Radar className="size-3.5" />
         </span>
-        Scanning for the next entry — 2,000 tokens checked in 24h, each must pass all 34 gates.
+        Scanning for the next entry — 2,000 tokens checked in 24h, each must pass all {config.gates} checks.
       </div>
     </Card>
   );

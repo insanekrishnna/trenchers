@@ -162,9 +162,9 @@ export const config = {
   perTrade: 0.05,
   maxOpen: "Unlimited",
   overrides: 3,
-  gates: 34,
-  stopLoss: "0.70×",
-  takeProfit: "1.35×+",
+  gates: 18,
+  stopLoss: "0.75×",
+  takeProfit: "3×",
   staleAfter: "45m",
 };
 
