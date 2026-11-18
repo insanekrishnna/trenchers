@@ -66,7 +66,15 @@ export function Pills<T extends string>({
 }
 
 /** Thin underline tabs, like the AI Insights card */
-export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { key: T; label: string }[]; value: T; onChange: (k: T) => void }) {
+export function Tabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+}: {
+  tabs: { key: T; label: string; icon?: React.ComponentType<{ className?: string; weight?: "regular" | "fill" }> }[];
+  value: T;
+  onChange: (k: T) => void;
+}) {
   const id = useId();
   return (
     <div className="flex gap-5 border-b border-line">
@@ -74,8 +82,9 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { key:
         <button
           key={t.key}
           onClick={() => onChange(t.key)}
-          className={`relative pb-2.5 text-[12.5px] transition-colors ${value === t.key ? "text-fg" : "text-subtle hover:text-muted"}`}
+          className={`group relative flex items-center gap-1.5 pb-2.5 text-[12.5px] transition-colors ${value === t.key ? "text-fg" : "text-subtle hover:text-muted"}`}
         >
+          {t.icon && <t.icon className={`size-3.5 ${value === t.key ? "text-accent" : ""}`} weight={value === t.key ? "fill" : "regular"} />}
           {t.label}
           {value === t.key && <motion.span layoutId={`tab-${id}`} className="absolute inset-x-0 -bottom-px h-px bg-accent" />}
         </button>
