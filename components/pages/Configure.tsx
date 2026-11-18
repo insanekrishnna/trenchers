@@ -3,19 +3,15 @@
 import {
   ArrowCircleDownIcon,
   ArrowCircleUpIcon,
-  CaretRightIcon,
+  ArrowRightIcon,
   CheckIcon,
   DownloadSimpleIcon,
-  FunnelSimpleIcon,
   type Icon,
   InfoIcon,
-  LightningIcon,
   MagnifyingGlassIcon,
   RocketLaunchIcon,
   ShareNetworkIcon,
   ShoppingCartSimpleIcon,
-  SignOutIcon,
-  SlidersHorizontalIcon,
   SwapIcon,
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
@@ -23,16 +19,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { config } from "@/lib/data";
 import { Card } from "@/components/ui/primitives";
-import { Page, Switch } from "./kit";
+import { Page, Switch, Tabs } from "./kit";
 
 type Section = "essentials" | "gates" | "exit" | "fees";
-
-const SECTIONS: { key: Section; label: string; icon: Icon }[] = [
-  { key: "essentials", label: "Essentials", icon: SlidersHorizontalIcon },
-  { key: "gates", label: "Entry Gates", icon: FunnelSimpleIcon },
-  { key: "exit", label: "Exit Strategy", icon: SignOutIcon },
-  { key: "fees", label: "Fees & execution", icon: LightningIcon },
-];
 
 interface Gate {
   id: string;
@@ -67,7 +56,7 @@ const INITIAL = {
     { at: 2, sell: 30 },
     { at: 3, sell: 30 },
   ],
-  stopLoss: 30, // % fall from entry
+  stopLoss: 30,
   stale: 45,
   trailing: true,
   trailPct: 20,
@@ -78,93 +67,126 @@ const INITIAL = {
   jito: 0.0001,
   autoFees: true,
 };
-
 type State = typeof INITIAL;
+
+/** Human-readable list of what changed since the last save. */
+function diff(a: State, b: State) {
+  const out: { label: string; from: string; to: string }[] = [];
+  const add = (label: string, x: unknown, y: unknown, f: (v: never) => string = (v) => String(v)) => {
+    if (JSON.stringify(x) !== JSON.stringify(y)) out.push({ label, from: f(x as never), to: f(y as never) });
+  };
+  const onoff = (v: boolean) => (v ? "On" : "Off");
+  add("Buy at", a.buyAt, b.buyAt, (v: string) => (v === "launch" ? "Launch" : "Migration"));
+  add("AI optimizations", a.ai, b.ai, onoff);
+  add("Per-trade size", a.perTrade, b.perTrade, (v: number) => `${v.toFixed(3)} SOL`);
+  add("Max open", a.maxOpen, b.maxOpen, (v: number) => (v === 0 ? "Unlimited" : String(v)));
+  add("Re-entry", a.reentry, b.reentry, onoff);
+  add("Pump.fun", a.pump, b.pump, onoff);
+  a.gates.forEach((g, i) => {
+    const h = b.gates[i];
+    if (g.on !== h.on) out.push({ label: g.label, from: onoff(g.on), to: onoff(h.on) });
+    else if (g.value !== h.value) out.push({ label: g.label, from: `${g.cmp} ${g.value}${g.unit === "$" ? "" : g.unit}`, to: `${h.cmp} ${h.value}${h.unit === "$" ? "" : h.unit}` });
+  });
+  add("Stop loss", a.stopLoss, b.stopLoss, (v: number) => `−${v}%`);
+  add("Stale exit", a.stale, b.stale, (v: number) => `${v}m`);
+  add("Trailing stop", a.trailing, b.trailing, onoff);
+  add("Sell if dev sells", a.devSells, b.devSells, onoff);
+  add("Sell if buyers leave", a.buyersLeave, b.buyersLeave, onoff);
+  add("Auto fees", a.autoFees, b.autoFees, onoff);
+  add("Priority fee", a.priority, b.priority, (v: number) => `${v} SOL`);
+  add("Jito tip", a.jito, b.jito, (v: number) => `${v} SOL`);
+  add("Slippage", a.slippage, b.slippage, (v: number) => `${v}%`);
+  return out;
+}
 
 export function Configure() {
   const [s, setS] = useState<State>(INITIAL);
+  const [saved, setSaved] = useState<State>(INITIAL);
   const [section, setSection] = useState<Section>("essentials");
   const [q, setQ] = useState("");
   const [version, setVersion] = useState(2);
-  const [saved, setSaved] = useState<State>(INITIAL);
-  const [justSaved, setJustSaved] = useState(false);
-  const dirty = JSON.stringify(s) !== JSON.stringify(saved);
+  const [flash, setFlash] = useState(false);
   const set = <K extends keyof State>(k: K, v: State[K]) => setS((p) => ({ ...p, [k]: v }));
+  const changes = diff(saved, s);
+  const dirty = changes.length > 0;
 
   useEffect(() => {
-    if (!justSaved) return;
-    const t = setTimeout(() => setJustSaved(false), 1800);
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(false), 1800);
     return () => clearTimeout(t);
-  }, [justSaved]);
+  }, [flash]);
 
   const save = () => {
     setSaved(s);
     setVersion((v) => v + 1);
-    setJustSaved(true);
+    setFlash(true);
   };
 
-  const match = (label: string) => !q || label.toLowerCase().includes(q.toLowerCase());
-  const activeGates = 25 + s.gates.filter((g) => g.on).length; // 25 always-on safety checks + the tunable ones
+  const m = (label: string) => !q || label.toLowerCase().includes(q.toLowerCase());
+  const activeGates = 25 + s.gates.filter((g) => g.on).length;
 
   return (
-    <Page>
-      <div className="grid gap-5 xl:grid-cols-12">
-        {/* section rail */}
-        <nav className="xl:col-span-2">
-          <ul className="flex gap-1 overflow-x-auto xl:flex-col">
-            {SECTIONS.map((x) => {
-              const on = x.key === section;
-              return (
-                <li key={x.key}>
-                  <button
-                    onClick={() => setSection(x.key)}
-                    className={`group flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-left text-[13px] transition-colors ${
-                      on ? "bg-white/[.07] text-fg" : "text-muted hover:bg-white/[.045] hover:text-fg"
-                    }`}
-                  >
-                    <x.icon className={`size-4 ${on ? "text-accent" : "text-subtle group-hover:text-fg"}`} weight={on ? "fill" : "regular"} />
-                    {x.label}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* settings */}
-        <section className="min-w-0 space-y-4 xl:col-span-6">
-          <div className="flex items-center gap-2">
-            <label className="flex h-9 flex-1 items-center gap-2 rounded-full border border-line px-3.5 focus-within:border-white/20">
-              <MagnifyingGlassIcon className="size-4 text-subtle" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search parameters…" className="h-full flex-1 bg-transparent text-[13px] outline-none placeholder:text-subtle" />
-            </label>
-            {[
-              { i: UploadSimpleIcon, t: "Import config" },
-              { i: DownloadSimpleIcon, t: "Export config" },
-              { i: ShareNetworkIcon, t: "Share config" },
-            ].map(({ i: I, t }) => (
-              <button key={t} className="icon-btn size-9" aria-label={t} title={t}>
-                <I className="size-4" />
-              </button>
-            ))}
-            <button onClick={save} disabled={!dirty && !justSaved} className="btn-live h-9 px-4 text-[13px] disabled:cursor-default disabled:opacity-40">
-              {justSaved ? (
-                <>
-                  <CheckIcon className="size-3.5" weight="bold" /> Saved v{version}
-                </>
-              ) : (
-                "Save"
-              )}
+    <Page width="wide">
+      {/* title row */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-[20px] font-medium tracking-tight">Configure</h1>
+          <p className="mt-1 text-[13px] text-subtle">
+            config v{version} ·{" "}
+            {dirty ? <span className="text-warn">{changes.length} unsaved change{changes.length === 1 ? "" : "s"}</span> : flash ? <span className="text-green">saved just now</span> : "saved today"}
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          {[
+            { i: UploadSimpleIcon, t: "Import config" },
+            { i: DownloadSimpleIcon, t: "Export config" },
+            { i: ShareNetworkIcon, t: "Share config" },
+          ].map(({ i: I, t }) => (
+            <button key={t} className="icon-btn size-9" aria-label={t} title={t}>
+              <I className="size-4" />
             </button>
-          </div>
-          {dirty && <p className="-mt-2 px-1 text-[12px] text-warn">Unsaved changes · config v{version}</p>}
+          ))}
+          <button onClick={save} disabled={!dirty} className="btn-live ml-2 h-9 px-4 text-[13px] disabled:cursor-default disabled:opacity-35">
+            {flash ? (
+              <>
+                <CheckIcon className="size-3.5" weight="bold" /> Saved
+              </>
+            ) : (
+              "Save"
+            )}
+          </button>
+        </div>
+      </div>
 
+      {/* tabs + search */}
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line">
+        <div className="-mb-px">
+          <Tabs<Section>
+            value={section}
+            onChange={setSection}
+            tabs={[
+              { key: "essentials", label: "Essentials" },
+              { key: "gates", label: `Entry gates · ${activeGates}` },
+              { key: "exit", label: "Exit strategy" },
+              { key: "fees", label: "Fees & execution" },
+            ]}
+          />
+        </div>
+        <label className="mb-2 flex h-8 w-56 items-center gap-2 rounded-full border border-line px-3 focus-within:border-white/25">
+          <MagnifyingGlassIcon className="size-3.5 text-subtle" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search parameters" className="h-full flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-subtle" />
+        </label>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-12">
+        {/* settings */}
+        <section className="min-w-0 xl:col-span-7">
           <AnimatePresence mode="wait">
-            <motion.div key={section} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="space-y-4">
+            <motion.div key={section} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="space-y-6">
               {section === "essentials" && (
                 <>
-                  <Rows>
-                    {match("Buy at") && (
+                  <Group label="Buying">
+                    {m("Buy at") && (
                       <Row label="Buy at" hint="Enter right at launch, or wait until the coin migrates off the bonding curve">
                         <Segmented
                           value={s.buyAt}
@@ -176,89 +198,69 @@ export function Configure() {
                         />
                       </Row>
                     )}
-                    {match("AI optimizations") && (
-                      <Row label="AI optimizations" hint="Let AI review results and suggest config changes">
-                        <Switch checked={s.ai} onChange={(v) => set("ai", v)} label="AI optimizations" />
-                      </Row>
-                    )}
-                    {match("Allow re-entry") && (
+                    {m("Allow re-entry") && (
                       <Row label="Allow re-entry" hint="Buy the same coin again after selling it">
                         <Switch checked={s.reentry} onChange={(v) => set("reentry", v)} label="Allow re-entry" />
                       </Row>
                     )}
-                  </Rows>
+                    {m("AI optimizations") && (
+                      <Row label="AI optimizations" hint="Let AI review results and suggest config changes">
+                        <Switch checked={s.ai} onChange={(v) => set("ai", v)} label="AI optimizations" />
+                      </Row>
+                    )}
+                  </Group>
 
-                  {(match("Per-trade size") || match("Max open positions")) && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {match("Per-trade size") && (
-                        <Gauge
+                  {(m("Per-trade size") || m("Max open positions")) && (
+                    <Group label="Position size">
+                      {m("Per-trade size") && (
+                        <Ruler
                           label="Per-trade size"
                           hint="SOL spent on each buy"
-                          value={s.perTrade}
-                          min={0.001}
-                          max={5}
-                          step={0.001}
                           display={s.perTrade.toFixed(3)}
                           unit="SOL"
-                          minLabel="Min size"
-                          maxLabel="Soft max"
-                          minText="0.001"
-                          maxText="5.000"
-                          onChange={(v) => set("perTrade", v)}
-                          log
+                          t={Math.log(s.perTrade / 0.001) / Math.log(5 / 0.001)}
+                          onT={(t) => set("perTrade", Math.round(0.001 * Math.pow(5000, t) * 1000) / 1000)}
+                          marks={["0.001", "0.01", "0.1", "1", "5"]}
                         />
                       )}
-                      {match("Max open positions") && (
-                        <Gauge
+                      {m("Max open positions") && (
+                        <Ruler
                           label="Max open positions"
-                          hint="How many coins the bot can hold at once. 0 = no limit"
-                          value={s.maxOpen}
-                          min={0}
-                          max={10}
-                          step={1}
+                          hint="How many coins the bot can hold at once"
                           display={s.maxOpen === 0 ? "∞" : String(s.maxOpen)}
-                          unit={s.maxOpen === 0 ? "" : "open"}
-                          minLabel="Unlimited"
-                          maxLabel="Soft max"
-                          minText="∞"
-                          maxText="10"
-                          onChange={(v) => set("maxOpen", v)}
+                          unit={s.maxOpen === 0 ? "no limit" : "at once"}
+                          t={s.maxOpen / 10}
+                          onT={(t) => set("maxOpen", Math.round(t * 10))}
+                          marks={["∞", "2", "4", "6", "8", "10"]}
                         />
                       )}
-                    </div>
+                    </Group>
                   )}
 
-                  {match("Launchpads") && (
-                    <Card className="px-5 py-4">
-                      <div className="flex items-center justify-between">
-                        <Label label="Launchpads" hint="Where the bot looks for new coins">
-                          <span className="ml-2 rounded-full border border-line px-1.5 text-[10.5px] uppercase tracking-wider text-subtle">new</span>
-                        </Label>
-                        <span className="text-[12px] tabular-nums text-subtle">{s.pump ? 1 : 0} of 1</span>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between">
-                        <button
-                          onClick={() => set("pump", !s.pump)}
-                          className={`flex h-8 items-center gap-2 rounded-full border px-3 text-[12.5px] transition-colors ${
-                            s.pump ? "border-white/25 text-fg" : "border-line text-subtle hover:text-fg"
-                          }`}
-                        >
-                          <span className={`size-1.5 rounded-full ${s.pump ? "bg-green" : "bg-subtle"}`} /> Pump.fun
-                        </button>
-                        <button onClick={() => set("pump", true)} className="btn-link">
-                          Select all
-                        </button>
-                      </div>
-                    </Card>
+                  {m("Launchpads") && (
+                    <Group label="Sources">
+                      <Row label="Launchpads" hint="Where the bot looks for new coins">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => set("pump", !s.pump)}
+                            className={`flex h-7 items-center gap-2 rounded-full border px-3 text-[12.5px] transition-colors ${s.pump ? "border-white/25 text-fg" : "border-line text-subtle hover:text-fg"}`}
+                          >
+                            <span className={`size-1.5 rounded-full ${s.pump ? "bg-green" : "bg-subtle"}`} /> Pump.fun
+                          </button>
+                          <span className="text-[12px] tabular-nums text-subtle">{s.pump ? 1 : 0}/1</span>
+                        </div>
+                      </Row>
+                    </Group>
                   )}
                 </>
               )}
 
               {section === "gates" && (
-                <Rows title={`${activeGates} active gates`} meta="25 safety checks always run · tune the rest">
+                <Group label={`${activeGates} active · 25 safety checks always run`}>
                   {s.gates
-                    .filter((g) => match(g.label))
-                    .map((g, i) => (
+                    .map((g, i) => ({ g, i }))
+                    .filter(({ g }) => m(g.label))
+                    .map(({ g, i }) => (
                       <Row key={g.id} label={g.label} hint={g.hint} dim={!g.on}>
                         <div className="flex items-center gap-3">
                           <NumberField
@@ -272,116 +274,160 @@ export function Configure() {
                         </div>
                       </Row>
                     ))}
-                </Rows>
+                </Group>
               )}
 
               {section === "exit" && (
                 <>
-                  {match("Take-profit ladder") && (
-                    <Card className="px-5 py-4">
-                      <Label label="Take-profit ladder" hint="Sell part of the position at each target" />
-                      <div className="mt-4 space-y-3">
-                        {s.tiers.map((t, i) => (
-                          <div key={i} className="grid grid-cols-[48px_1fr_auto] items-center gap-3 text-[13px]">
-                            <span className="text-subtle">Tier {i + 1}</span>
-                            <span className="relative h-[3px] rounded-full bg-white/[.07]">
-                              <span className="absolute inset-y-0 left-0 rounded-full bg-green" style={{ width: `${(t.at / 3.2) * 100}%` }} />
-                            </span>
-                            <span className="tabular-nums">
-                              sell <span className="text-fg">{t.sell}%</span> <span className="text-subtle">at</span> <span className="text-green">{t.at}×</span>
-                            </span>
-                          </div>
-                        ))}
+                  {m("Take-profit ladder") && (
+                    <Group label="Take profit">
+                      <div className="px-5 py-4">
+                        {/* one shared 1×–3.2× axis, a tick per tier */}
+                        <div className="relative h-8">
+                          <span className="absolute inset-x-0 top-[15px] h-px bg-white/[.08]" />
+                          <span className="absolute left-0 top-[15px] h-px bg-green" style={{ width: `${((3 - 1) / 2.2) * 100}%` }} />
+                          {s.tiers.map((t, i) => {
+                            const left = ((t.at - 1) / 2.2) * 100;
+                            return (
+                              <span key={i} className="absolute top-0 -translate-x-1/2 text-center" style={{ left: `${left}%` }}>
+                                <span className="block text-[11px] tabular-nums text-green">{t.at}×</span>
+                                <span className="mx-auto mt-0.5 block size-2 rounded-full border-2 border-bg-2 bg-green" />
+                              </span>
+                            );
+                          })}
+                          <span className="absolute left-0 top-[11px] text-[11px] text-subtle">1×</span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-[12.5px]">
+                          {s.tiers.map((t, i) => (
+                            <div key={i} className="rounded-md border border-line px-3 py-2">
+                              <p className="text-[11px] text-subtle">Tier {i + 1}</p>
+                              <p className="tabular-nums">
+                                sell <span className="text-fg">{t.sell}%</span> <span className="text-subtle">at</span> <span className="text-green">{t.at}×</span>
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </Card>
+                    </Group>
                   )}
-                  {match("Stop loss") && (
-                    <Card className="px-5 py-4">
-                      <div className="flex items-baseline justify-between">
-                        <Label label="Stop loss" hint="Sell everything if the price falls this far below entry" />
-                        <span className="text-[14px] tabular-nums">
-                          <span className="text-red">−{s.stopLoss}%</span> <span className="text-subtle">· {(1 - s.stopLoss / 100).toFixed(2)}×</span>
-                        </span>
-                      </div>
-                      <Slider value={s.stopLoss} min={5} max={60} step={1} onChange={(v) => set("stopLoss", v)} />
-                    </Card>
+
+                  {m("Stop loss") && (
+                    <Group label="Stop loss">
+                      <Ruler
+                        label="Sell everything if it falls"
+                        hint="Measured from your entry price"
+                        display={`−${s.stopLoss}%`}
+                        unit={`${(1 - s.stopLoss / 100).toFixed(2)}×`}
+                        tone="text-red"
+                        t={(s.stopLoss - 5) / 55}
+                        onT={(t) => set("stopLoss", Math.round(5 + t * 55))}
+                        marks={["5%", "20%", "35%", "50%", "60%"]}
+                      />
+                    </Group>
                   )}
-                  <Rows>
-                    {match("Stale exit") && (
+
+                  <Group label="Early exits">
+                    {m("Stale exit") && (
                       <Row label="Stale exit" hint="Sell if the price goes quiet for this long">
                         <Segmented
                           value={String(s.stale) as "15" | "30" | "45" | "60"}
                           onChange={(v) => set("stale", Number(v))}
-                          options={["15", "30", "45", "60"].map((m) => ({ key: m as "15" | "30" | "45" | "60", label: `${m}m` }))}
+                          options={(["15", "30", "45", "60"] as const).map((x) => ({ key: x, label: `${x}m` }))}
                         />
                       </Row>
                     )}
-                    {match("Trailing stop") && (
+                    {m("Trailing stop") && (
                       <Row label="Trailing stop" hint={`Sell if the price slips ${s.trailPct}% from its peak`}>
                         <Switch checked={s.trailing} onChange={(v) => set("trailing", v)} label="Trailing stop" />
                       </Row>
                     )}
-                    {match("Sell if the dev sells") && (
+                    {m("Sell if the dev sells") && (
                       <Row label="Sell if the dev sells" hint="Exit when the creator's wallet sells">
                         <Switch checked={s.devSells} onChange={(v) => set("devSells", v)} label="Sell if the dev sells" />
                       </Row>
                     )}
-                    {match("Sell if buyers walk away") && (
+                    {m("Sell if buyers walk away") && (
                       <Row label="Sell if buyers walk away" hint="Exit when buy pressure dries up">
                         <Switch checked={s.buyersLeave} onChange={(v) => set("buyersLeave", v)} label="Sell if buyers walk away" />
                       </Row>
                     )}
-                  </Rows>
+                  </Group>
                 </>
               )}
 
               {section === "fees" && (
-                <Rows>
-                  {match("Auto fees") && (
+                <Group label="Transaction fees">
+                  {m("Auto fees") && (
                     <Row label="Auto fees" hint="Pick priority fee and tip from current network load">
                       <Switch checked={s.autoFees} onChange={(v) => set("autoFees", v)} label="Auto fees" />
                     </Row>
                   )}
-                  {match("Priority fee") && (
+                  {m("Priority fee") && (
                     <Row label="Priority fee" hint="Extra SOL paid so the transaction lands faster" dim={s.autoFees}>
                       <NumberField value={s.priority} suffix="SOL" step={0.0001} disabled={s.autoFees} onChange={(v) => set("priority", v)} />
                     </Row>
                   )}
-                  {match("Jito tip") && (
+                  {m("Jito tip") && (
                     <Row label="Jito tip" hint="Tip to validators for bundle priority" dim={s.autoFees}>
                       <NumberField value={s.jito} suffix="SOL" step={0.0001} disabled={s.autoFees} onChange={(v) => set("jito", v)} />
                     </Row>
                   )}
-                  {match("Slippage") && (
+                  {m("Slippage") && (
                     <Row label="Slippage" hint="Most the price may move between sending and filling">
                       <NumberField value={s.slippage} suffix="%" onChange={(v) => set("slippage", v)} />
                     </Row>
                   )}
-                </Rows>
+                </Group>
               )}
             </motion.div>
           </AnimatePresence>
         </section>
 
-        {/* plain-English summary */}
-        <aside className="xl:col-span-4">
-          <Card className="overflow-hidden">
-            <p className="px-5 pb-1 pt-4 text-[12px] text-muted">Your bot</p>
+        {/* summary + pending changes */}
+        <aside className="space-y-4 xl:col-span-5">
+          <Card className="overflow-hidden xl:sticky xl:top-6">
+            <p className="border-b border-line px-5 py-3 text-[12px] text-muted">Your bot, in plain English</p>
             <ul className="divide-y divide-line">
-              <Summary icon={ShoppingCartSimpleIcon} color="#7cc4ff" title="Buys" onClick={() => setSection("essentials")}>
-                <b className="font-medium text-fg">{s.perTrade.toFixed(2)} SOL</b> of each new coin that passes your <b className="font-medium text-fg">{activeGates} checks</b>.
-                <span className="mt-1 block text-[12px] text-subtle">{s.maxOpen === 0 ? "No limit on how many at once." : `Up to ${s.maxOpen} at once.`}</span>
+              <Summary icon={ShoppingCartSimpleIcon} color="#7cc4ff" title="Buys">
+                <b className="font-medium text-fg">{s.perTrade.toFixed(2)} SOL</b> of each new coin {s.buyAt === "launch" ? "at launch" : "after migration"} that passes your{" "}
+                <b className="font-medium text-fg">{activeGates} checks</b>. {s.maxOpen === 0 ? "No limit on how many at once." : `Up to ${s.maxOpen} at once.`}
               </Summary>
-              <Summary icon={ArrowCircleUpIcon} color="#21c95e" title="Takes profit" onClick={() => setSection("exit")}>
-                Sells in <b className="font-medium text-fg">{s.tiers.length} steps</b>: {s.tiers.map((t) => `${t.sell}% at ${t.at}×`).join(", ")}.
+              <Summary icon={ArrowCircleUpIcon} color="#21c95e" title="Takes profit">
+                In <b className="font-medium text-fg">{s.tiers.length} steps</b> — {s.tiers.map((t) => `${t.sell}% at ${t.at}×`).join(", ")}.
               </Summary>
-              <Summary icon={ArrowCircleDownIcon} color="#ff622e" title="Cuts the loss" onClick={() => setSection("exit")}>
-                Sells everything if it falls <b className="font-medium text-fg">{s.stopLoss}%</b>.
-                <span className="mt-1 block text-[12px] leading-relaxed text-subtle">
-                  It also sells early if {[s.trailing && `the price slips ${s.trailPct}% from its peak`, `the coin goes quiet for ${s.stale}m`, s.buyersLeave && "buyers walk away", s.devSells && "the dev sells"].filter(Boolean).join(", ")}.
-                </span>
+              <Summary icon={ArrowCircleDownIcon} color="#ff622e" title="Cuts the loss">
+                Sells everything if it falls <b className="font-medium text-fg">{s.stopLoss}%</b>, or early if{" "}
+                {[s.trailing && `it slips ${s.trailPct}% from its peak`, `it goes quiet for ${s.stale}m`, s.buyersLeave && "buyers walk away", s.devSells && "the dev sells"].filter(Boolean).join(", ")}.
               </Summary>
             </ul>
+
+            <AnimatePresence initial={false}>
+              {dirty && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-line">
+                  <div className="px-5 py-3.5">
+                    <p className="text-[12px] text-warn">Unsaved changes</p>
+                    <ul className="mt-2 space-y-1.5">
+                      {changes.map((c) => (
+                        <li key={c.label} className="flex items-center gap-2 text-[12.5px]">
+                          <span className="flex-1 truncate text-muted">{c.label}</span>
+                          <span className="tabular-nums text-subtle line-through decoration-white/20">{c.from}</span>
+                          <ArrowRightIcon className="size-3 text-subtle" />
+                          <span className="tabular-nums text-fg">{c.to}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-3.5 flex justify-end gap-2">
+                      <button onClick={() => setS(saved)} className="h-8 rounded-full px-3 text-[12.5px] text-muted transition-colors hover:bg-white/[.05] hover:text-fg">
+                        Discard
+                      </button>
+                      <button onClick={save} className="btn-live h-8 px-3.5 text-[13px]">
+                        Save as v{version + 1}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
         </aside>
       </div>
@@ -391,39 +437,32 @@ export function Configure() {
 
 /* ---------------- building blocks ---------------- */
 
-function Label({ label, hint, children }: { label: string; hint: string; children?: React.ReactNode }) {
+function Hint({ text }: { text: string }) {
   return (
-    <span className="flex items-center gap-1.5 text-[13.5px]">
-      {label}
-      <span title={hint} className="text-subtle transition-colors hover:text-fg">
-        <InfoIcon className="size-3.5" />
+    <span className="group/hint relative">
+      <InfoIcon className="size-3.5 text-subtle transition-colors group-hover/hint:text-fg" />
+      <span className="pointer-events-none absolute bottom-6 left-1/2 z-20 w-56 -translate-x-1/2 rounded-md border border-line bg-bg-3 px-2.5 py-1.5 text-[12px] leading-relaxed text-muted opacity-0 shadow-pop transition-opacity group-hover/hint:opacity-100">
+        {text}
       </span>
-      {children}
     </span>
   );
 }
 
-function Rows({ title, meta, children }: { title?: string; meta?: string; children: React.ReactNode }) {
+function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Card className="overflow-hidden">
-      {title && (
-        <div className="flex items-baseline justify-between border-b border-line px-5 py-3">
-          <span className="text-[13.5px] font-medium">{title}</span>
-          <span className="text-[12px] text-subtle">{meta}</span>
-        </div>
-      )}
-      <div className="divide-y divide-line">{children}</div>
-    </Card>
+    <div>
+      <p className="mb-2 px-1 text-[11px] uppercase tracking-[0.08em] text-subtle">{label}</p>
+      <Card className="divide-y divide-line">{children}</Card>
+    </div>
   );
 }
 
 function Row({ label, hint, dim, children }: { label: string; hint: string; dim?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[52px] items-center justify-between gap-4 px-5 py-2.5 transition-colors hover:bg-white/[.02]">
-      <div className={`min-w-0 ${dim ? "opacity-50" : ""}`}>
-        <Label label={label} hint={hint} />
-        <p className="mt-0.5 truncate text-[11.5px] text-subtle">{hint}</p>
-      </div>
+    <div className="flex h-12 items-center justify-between gap-4 px-5 transition-colors hover:bg-white/[.02]">
+      <span className={`flex items-center gap-1.5 text-[13.5px] ${dim ? "text-subtle" : ""}`}>
+        {label} <Hint text={hint} />
+      </span>
       {children}
     </div>
   );
@@ -450,21 +489,7 @@ function Segmented<T extends string>({ value, onChange, options }: { value: T; o
   );
 }
 
-function NumberField({
-  value,
-  onChange,
-  prefix = "",
-  suffix = "",
-  step = 1,
-  disabled,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  prefix?: string;
-  suffix?: string;
-  step?: number;
-  disabled?: boolean;
-}) {
+function NumberField({ value, onChange, prefix = "", suffix = "", step = 1, disabled }: { value: number; onChange: (v: number) => void; prefix?: string; suffix?: string; step?: number; disabled?: boolean }) {
   return (
     <label className={`flex h-8 items-center gap-1 rounded-full border border-line px-3 text-[12.5px] tabular-nums transition-colors focus-within:border-white/25 hover:border-white/15 ${disabled ? "opacity-40" : ""}`}>
       {prefix && <span className="text-subtle">{prefix}</span>}
@@ -481,116 +506,75 @@ function NumberField({
   );
 }
 
-function Slider({ value, min, max, step, onChange }: { value: number; min: number; max: number; step: number; onChange: (v: number) => void }) {
-  const fill = ((value - min) / (max - min)) * 100;
-  return (
-    <input
-      type="range"
-      className="thin-range mt-3"
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      style={{ "--fill": `${fill}%` } as React.CSSProperties}
-    />
-  );
-}
-
-/* a thin dial of ticks plus a slider underneath */
-function Gauge(p: {
+/* big number, thin slider and a tick ruler underneath */
+function Ruler({
+  label,
+  hint,
+  display,
+  unit,
+  t,
+  onT,
+  marks,
+  tone = "text-fg",
+}: {
   label: string;
   hint: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
   display: string;
   unit: string;
-  minLabel: string;
-  maxLabel: string;
-  minText: string;
-  maxText: string;
-  onChange: (v: number) => void;
-  log?: boolean;
+  t: number;
+  onT: (t: number) => void;
+  marks: string[];
+  tone?: string;
 }) {
-  // log scale for SOL size so small sizes are easy to dial in
-  const toT = (v: number) => (p.log ? Math.log(v / p.min) / Math.log(p.max / p.min) : (v - p.min) / (p.max - p.min));
-  const fromT = (t: number) => (p.log ? p.min * Math.pow(p.max / p.min, t) : p.min + t * (p.max - p.min));
-  const t = Math.max(0, Math.min(1, toT(p.value)));
-  // a half-circle of ticks over the number
-  const N = 31;
-  const R = 74;
-  const cx = 100;
-  const cy = 88;
-  // round so server and browser render identical attributes (no hydration drift)
-  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const clamped = Math.max(0, Math.min(1, t));
   return (
-    <Card className="px-5 py-4">
-      <Label label={p.label} hint={p.hint} />
-      <div className="relative mx-auto mt-3 h-[96px] w-[200px]">
-        <svg viewBox="0 0 200 96" className="absolute inset-0">
-          {Array.from({ length: N }).map((_, i) => {
-            const a = Math.PI + (i / (N - 1)) * Math.PI;
-            const on = i / (N - 1) <= t + 1e-6;
-            const inner = i % 5 === 0 ? R - 12 : R - 8;
-            return (
-              <line
-                key={i}
-                x1={r2(cx + Math.cos(a) * inner)}
-                y1={r2(cy + Math.sin(a) * inner)}
-                x2={r2(cx + Math.cos(a) * R)}
-                y2={r2(cy + Math.sin(a) * R)}
-                stroke={on ? "#f7f7f7" : "rgba(247,247,247,.12)"}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            );
-          })}
-        </svg>
-        <p className="absolute inset-x-0 top-[52px] text-center">
-          <span className="text-[24px] font-light tabular-nums tracking-tight">{p.display}</span>
-          {p.unit && <span className="ml-1 text-[11px] text-muted">{p.unit}</span>}
-        </p>
+    <div className="px-5 py-4">
+      <div className="flex items-baseline justify-between">
+        <span className="flex items-center gap-1.5 text-[13.5px]">
+          {label} <Hint text={hint} />
+        </span>
+        <span className="tabular-nums">
+          <span className={`text-[22px] font-light tracking-tight ${tone}`}>{display}</span>
+          <span className="ml-1.5 text-[12px] text-subtle">{unit}</span>
+        </span>
       </div>
       <input
         type="range"
-        className="thin-range"
+        aria-label={label}
+        className="thin-range mt-3"
         min={0}
         max={1000}
-        value={Math.round(t * 1000)}
-        onChange={(e) => {
-          const raw = fromT(Number(e.target.value) / 1000);
-          p.onChange(Math.round(raw / p.step) * p.step);
-        }}
-        style={{ "--fill": `${t * 100}%` } as React.CSSProperties}
-        aria-label={p.label}
+        value={Math.round(clamped * 1000)}
+        onChange={(e) => onT(Number(e.target.value) / 1000)}
+        style={{ "--fill": `${clamped * 100}%` } as React.CSSProperties}
       />
-      <div className="mt-2 flex justify-between text-[11px] tabular-nums">
-        <span>
-          <span className="block uppercase tracking-wider text-subtle">{p.minLabel}</span>
-          <span className="text-muted">{p.minText}</span>
-        </span>
-        <span className="text-right">
-          <span className="block uppercase tracking-wider text-subtle">{p.maxLabel}</span>
-          <span className="text-muted">{p.maxText}</span>
-        </span>
+      {/* ruler: minor ticks, major ticks carry the labels */}
+      <div className="relative mt-1 h-5">
+        {Array.from({ length: 41 }).map((_, i) => (
+          <span key={i} className={`absolute top-0 w-px ${i % 10 === 0 ? "h-2 bg-white/25" : "h-1 bg-white/10"}`} style={{ left: `${(i / 40) * 100}%` }} />
+        ))}
+        {marks.map((mk, i) => (
+          <span
+            key={mk}
+            className="absolute top-2.5 text-[10.5px] tabular-nums text-subtle"
+            style={{ left: `${(i / (marks.length - 1)) * 100}%`, transform: i === 0 ? "none" : i === marks.length - 1 ? "translateX(-100%)" : "translateX(-50%)" }}
+          >
+            {mk}
+          </span>
+        ))}
       </div>
-    </Card>
+    </div>
   );
 }
 
-function Summary({ icon: I, color, title, onClick, children }: { icon: Icon; color: string; title: string; onClick: () => void; children: React.ReactNode }) {
+function Summary({ icon: I, color, title, children }: { icon: Icon; color: string; title: string; children: React.ReactNode }) {
   return (
-    <li>
-      <button onClick={onClick} className="group flex w-full items-start gap-3 px-5 py-4 text-left transition-colors hover:bg-white/[.025]">
-        <I className="mt-0.5 size-5 shrink-0" style={{ color }} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-[12px] text-subtle">{title}</span>
-          <span className="mt-0.5 block text-[13.5px] leading-relaxed text-muted">{children}</span>
-        </span>
-        <CaretRightIcon className="mt-1 size-3.5 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-fg" />
-      </button>
+    <li className="flex gap-3 px-5 py-4">
+      <I className="mt-0.5 size-[18px] shrink-0" style={{ color }} />
+      <div className="min-w-0">
+        <p className="text-[12px] text-subtle">{title}</p>
+        <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">{children}</p>
+      </div>
     </li>
   );
 }
